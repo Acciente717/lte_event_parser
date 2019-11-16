@@ -92,8 +92,8 @@ class FastRecoverAfterRLFParser(ParserBase):
     def act_on_pdcp_packet(self, event):
         timestamp, _, _ = event
         if self.just_switched:
-            print('Fast Recovery After RLF $ From: %s, To: %s' % (self.last_packet_timestamp_before_rlf, timestamp))
-        self.reset_to_normal_state()
+            print('Fast Recovery After RLF PDCP Disruption $ From: %s, To: %s' % (self.last_packet_timestamp_before_rlf, timestamp))
+            self.shared_states['reset_all'] = True
 
     action_to_events = {
         'measResults' : act_on_meas_results,
@@ -111,3 +111,6 @@ class FastRecoverAfterRLFParser(ParserBase):
     def run(self, event):
         _, pkt_type, _ = event
         self.action_to_events.get(pkt_type, lambda self, event: None)(self, event)
+    
+    def reset(self):
+        self.reset_to_normal_state()

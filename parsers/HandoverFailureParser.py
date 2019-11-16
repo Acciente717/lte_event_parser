@@ -77,7 +77,7 @@ class HandoverFailureParser(ParserBase):
         timestamp, _, _ = event
         if self.just_handovered:
             print('Handover Failure PDCP Disruption $ From: %s, To: %s' % (self.last_packet_timestamp_before_ho, timestamp))
-        self.reset_to_normal_state()
+            self.shared_states['reset_all'] = True
 
     action_to_events = {
         'rrcConnectionReconfiguration' : act_on_rrc_connection_reconfiguration,
@@ -92,3 +92,6 @@ class HandoverFailureParser(ParserBase):
     def run(self, event):
         _, pkt_type, _ = event
         self.action_to_events.get(pkt_type, lambda self, event: None)(self, event)
+
+    def reset(self):
+        self.reset_to_normal_state()

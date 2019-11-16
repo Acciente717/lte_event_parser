@@ -1,4 +1,6 @@
 ### Copyright [2019] Zhiyao Ma
+import inspect
+
 from parsers.ParserBase import ParserBase
 from parsers.HandoverSuccessParser import HandoverSuccessParser
 from parsers.HandoverFailureParser import HandoverFailureParser
@@ -16,17 +18,22 @@ def run():
     shared_states = {
         'last_serving_cell_dl_freq' : None,
         'last_serving_cell_ul_freq' : None,
-        'last_serving_cell_id' : None
+        'last_serving_cell_id' : None,
+        'reset_all' : False
     }
     active_parsers = [
         i(shared_states) for i in globals().values()
-        if type(i) is type
+        if inspect.isclass(i)
         and issubclass(i, ParserBase)
         and i is not ParserBase
     ]
     while True:
         try:
             line = input()
+            if shared_states['reset_all']:
+                for active_parser in active_parsers:
+                    active_parser.reset()
+                shared_states['reset_all'] = False
             for active_parser in active_parsers:
                 active_parser.run(extract_info(line))
         except EOFError:
