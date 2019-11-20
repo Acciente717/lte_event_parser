@@ -30,6 +30,9 @@ class HandoverSuccessParser(ParserBase):
         super().__init__(shared_states)
         self._reset_to_normal_state()
 
+        # To avoid false positive warning upon program start, set it to True.
+        self.have_sent_meas_report_to_current_cell = True
+
     def _reset_to_normal_state(self):
         self.handover_command_timestamp = None
         self.target_cell_id = None
@@ -59,6 +62,15 @@ class HandoverSuccessParser(ParserBase):
                         % (self.__class__.__name__, timestamp), end='')
             self.eprint('received handover command twice.')
 
+        # Unexpected case, we received handover command but we have not sent
+        # any measurement report.
+        if fields['mobilityControlInfo'] == '1'\
+        and not self.have_sent_meas_report_to_current_cell:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('received handover command but no measurement'
+                        + ' report was sent.')
+
     def _act_on_mac_rach_trigger(self, event):
         _, _, fields = event
         self.mac_rach_triggered_reason = fields['Reason']
@@ -82,6 +94,10 @@ class HandoverSuccessParser(ParserBase):
 
     def _act_on_rrc_serv_cell_info(self, event):
         timestamp, _, fields = event
+
+        # If we moved to a new cell, reset the flag of sending measurement report.
+        if fields['Cell ID'] != self.shared_states['last_serving_cell_id']:
+            self.have_sent_meas_report_to_current_cell = False
 
         # If the the MAC RACH triggered by handover is succeeded, and the
         # target cell ID matches that indicated in the handover command,
@@ -153,7 +169,11 @@ class HandoverSuccessParser(ParserBase):
         and self.mac_rach_triggered_reason is None:
             self.last_packet_timestamp_before_ho = timestamp
 
+    def _act_on_meas_results(self, event):
+        self.have_sent_meas_report_to_current_cell = True
+
     _action_to_events = {
+        'measResults' : _act_on_meas_results,
         'rrcConnectionReconfiguration' : _act_on_rrc_connection_reconfiguration,
         'LTE_MAC_Rach_Trigger' : _act_on_mac_rach_trigger,
         'LTE_MAC_Rach_Attempt' : _act_on_mac_rach_attempt,

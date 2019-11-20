@@ -33,6 +33,9 @@ class HandoverFailureParser(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        
+        # To avoid false positive warning upon program start, set it to True.
+        self.have_sent_meas_report_to_current_cell = True
 
     def _reset_to_normal_state(self):
         self.handover_command_timestamp = None
@@ -68,9 +71,24 @@ class HandoverFailureParser(ParserBase):
             self.eprint('Warning [%s] [%s]: '
                         % (self.__class__.__name__, timestamp), end='')
             self.eprint('received handover command twice.')
+        
+        # Unexpected case, we received handover command but we have not sent
+        # any measurement report.
+        if fields['mobilityControlInfo'] == '1'\
+        and not self.have_sent_meas_report_to_current_cell:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('received handover command but no measurement'
+                        + ' report was sent.')
 
     def _act_on_rrc_serv_cell_info(self, event):
         _, _, fields = event
+
+        # If we moved to a new cell, reset the flag of sending measurement report.
+        if fields['Cell ID'] != self.shared_states['last_serving_cell_id']:
+            self.have_sent_meas_report_to_current_cell = False
+
+        # Check if we moved to the target cell.
         if fields['Cell ID'] == self.target_cell_id:
             self.switched_to_target_cell = True
         else:
@@ -153,7 +171,11 @@ class HandoverFailureParser(ParserBase):
             print('Handover Failure PDCP Disruption $ From: %s, To: %s' % (self.last_packet_timestamp_before_ho, timestamp))
             self.shared_states['reset_all'] = True
 
+    def _act_on_meas_results(self, event):
+        self.have_sent_meas_report_to_current_cell = True
+
     _action_to_events = {
+        'measResults' : _act_on_meas_results,
         'rrcConnectionReconfiguration' : _act_on_rrc_connection_reconfiguration,
         'rrcConnectionReconfigurationComplete' : _act_on_rrc_connection_reconfiguration_complete,
         'rrcConnectionReestablishmentRequest' : _act_on_rrc_connection_reestablishment_request,
