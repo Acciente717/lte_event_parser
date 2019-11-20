@@ -30,6 +30,10 @@ class HandoverSuccessParser(ParserBase):
         super().__init__(shared_states)
         self._reset_to_normal_state()
 
+        self.last_packet_timestamp_before_ho = None
+        self.first_packet_timestamp_after_ho = None
+        self.just_handovered = False
+
         # To avoid false positive warning upon program start, set it to True.
         self.have_sent_meas_report_to_current_cell = True
 
@@ -39,9 +43,6 @@ class HandoverSuccessParser(ParserBase):
         self.received_handover_command = False
         self.mac_rach_triggered_reason = None
         self.mac_rach_just_succeeded = False
-        self.last_packet_timestamp_before_ho = None
-        self.first_packet_timestamp_after_ho = None
-        self.just_handovered = False
 
     def _act_on_rrc_connection_reconfiguration(self, event):
         timestamp, _, fields = event
@@ -116,13 +117,12 @@ class HandoverSuccessParser(ParserBase):
             else:
                 print(', Frequecy Change: inter')
 
-            # Partially reset the states.
-            self.handover_command_timestamp = None
-            self.target_cell_id = None
-            self.received_handover_command = False
-            self.mac_rach_triggered_reason = None
-            self.mac_rach_just_succeeded = False
+            # Reset the states.
+            self.shared_states['reset_all'] = True
+
             self.just_handovered = True
+
+            # Update shared states.
             self.shared_states['last_serving_cell_dl_freq'] = fields['Downlink frequency']
             self.shared_states['last_serving_cell_ul_freq'] = fields['Uplink frequency']
             self.shared_states['last_serving_cell_id'] = fields['Cell ID']
@@ -131,11 +131,12 @@ class HandoverSuccessParser(ParserBase):
             # output the PDCP disruption summary and then reset all states.
             # Otherwise, wait for the first PDCP data packet and defer the
             # output to `_act_on_pdcp_packet`.
-            if self.first_packet_timestamp_after_ho is not None:
+            if self.first_packet_timestamp_after_ho is not None\
+            and self.just_handovered:
                 print('Handover Success PDCP Disruption $ From: %s, To: %s'
                       % (self.last_packet_timestamp_before_ho,
                          self.first_packet_timestamp_after_ho))
-                self.shared_states['reset_all'] = True
+                self.just_handovered = False
 
         # Sanity check. If the cell ID indicated in the handover command
         # does not match the new serving cell ID, output a warning.
@@ -155,6 +156,7 @@ class HandoverSuccessParser(ParserBase):
             print('Handover Success PDCP Disruption $ From: %s, To: %s'
                   % (self.last_packet_timestamp_before_ho, timestamp))
             self.shared_states['reset_all'] = True
+            self.just_handovered = False
         # If this is the first PDCP data packet we see after handover,
         # but we are still waiting for an `LTE_RRC_Serv_Cell_Info` packet,
         # log the timestamp and print it later (in
