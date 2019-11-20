@@ -66,11 +66,17 @@ class HandoverFailureParser(ParserBase):
             self.connection_reconfig_after_ho_failure = True
 
         # Unexpected case, we received handover commands twice
-        elif fields['mobilityControlInfo'] == '1'\
-        and self.received_handover_command:
-            self.eprint('Warning [%s] [%s]: '
-                        % (self.__class__.__name__, timestamp), end='')
-            self.eprint('received handover command twice.')
+        elif fields['mobilityControlInfo'] == '1':
+            if self.mac_rach_succeeded_after_ho_failure:
+                self.eprint('Warning [%s] [%s]: '
+                            % (self.__class__.__name__, timestamp), end='')
+                self.eprint('received a new handover command before'
+                            + ' fully recovering from handover failure.')
+            elif self.received_handover_command:
+                self.eprint('Warning [%s] [%s]: '
+                            % (self.__class__.__name__, timestamp), end='')
+                self.eprint('received handover command twice before'
+                            + ' taking any actions.')
         
         # Unexpected case, we received handover command but we have not sent
         # any measurement report.
