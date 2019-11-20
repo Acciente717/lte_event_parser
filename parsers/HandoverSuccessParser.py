@@ -1,6 +1,4 @@
 ### Copyright [2019] Zhiyao Ma
-import sys
-
 from .ParserBase import ParserBase
 class HandoverSuccessParser(ParserBase):
     """ The parser for detecting successful handover.
@@ -72,7 +70,7 @@ class HandoverSuccessParser(ParserBase):
         elif self.mac_rach_triggered_reason == 'HO'\
         and not self.received_handover_command:
             self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
-            self.eprint('mac rach triggered by handover, but no handover command received.')
+            self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_rrc_serv_cell_info(self, event):
         timestamp, _, fields = event
