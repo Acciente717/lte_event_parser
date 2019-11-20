@@ -46,18 +46,25 @@ class HandoverSuccessParser(ParserBase):
         # If we see the handover command, log the timestamp of the last PDCP
         # packet received before the command, the timestamp of this command,
         # and target cell ID.
-        if fields['mobilityControlInfo'] == '1':
+        if fields['mobilityControlInfo'] == '1'\
+        and not self.received_handover_command:
             self.received_handover_command = True
             self.last_packet_timestamp_before_ho = fields['LastPDCPPacketTimestamp']
             self.handover_command_timestamp = timestamp
             self.target_cell_id = fields['targetPhysCellId']
+        # Unexpected case, we received handover commands twice
+        elif fields['mobilityControlInfo'] == '1'\
+        and self.received_handover_command:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('received handover command twice.')
 
     def _act_on_mac_rach_trigger(self, event):
         _, _, fields = event
         self.mac_rach_triggered_reason = fields['Reason']
 
     def _act_on_mac_rach_attempt(self, event):
-        _, _, fields = event
+        timestamp, _, fields = event
         # If the recent triggering reason of MAC RACH is HO (handover),
         # and we have received handover request, and the result is success,
         # mark it.
@@ -69,7 +76,8 @@ class HandoverSuccessParser(ParserBase):
         # any handover command, output a warning.
         elif self.mac_rach_triggered_reason == 'HO'\
         and not self.received_handover_command:
-            self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
             self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_rrc_serv_cell_info(self, event):
@@ -117,7 +125,8 @@ class HandoverSuccessParser(ParserBase):
         # does not match the new serving cell ID, output a warning.
         elif self.mac_rach_just_succeeded\
         and fields['Cell ID'] != self.target_cell_id:
-            self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
             self.eprint('handover succeeded, but the target cell is not the one indicated in the handover command.')
 
     def _act_on_pdcp_packet(self, event):

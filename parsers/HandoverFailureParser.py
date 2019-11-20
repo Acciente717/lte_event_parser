@@ -49,28 +49,25 @@ class HandoverFailureParser(ParserBase):
     def _act_on_rrc_connection_reconfiguration(self, event):
         timestamp, _, fields = event
 
-        # The first time we receive an handover command.
+        # The first time we receive a handover command.
         if fields['mobilityControlInfo'] == '1'\
-        and not self.handover_failure:
+        and not self.received_handover_command:
             self.received_handover_command = True
             self.last_packet_timestamp_before_ho = fields['LastPDCPPacketTimestamp']
             self.handover_command_timestamp = timestamp
             self.target_cell_id = fields['targetPhysCellId']
 
-        # We are recovering from an handover failure.
-        elif self.mac_rach_succeeded_after_ho_failure:
+        # Expected case, we are recovering from a handover failure.
+        elif self.mac_rach_succeeded_after_ho_failure\
+        and fields['mobilityControlInfo'] == '0':
+            self.connection_reconfig_after_ho_failure = True
 
-            # Expected case, just a normal rrc connection reconfiguration command.
-            if fields['mobilityControlInfo'] == '0':
-                self.connection_reconfig_after_ho_failure = True
-            # Unexpected case, we receive a handover command before we finish the
-            # recovery process.
-            else:
-                self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
-                self.eprint('UE has just performed a successful MAC random'
-                            + ' access after a handover failure,'
-                            + ' but immediately received an handover command'
-                            + ' before rrcConnectionReconfigurationComplete.')
+        # Unexpected case, we received handover commands twice
+        elif fields['mobilityControlInfo'] == '1'\
+        and self.received_handover_command:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('received handover command twice.')
 
     def _act_on_rrc_serv_cell_info(self, event):
         _, _, fields = event
@@ -90,7 +87,8 @@ class HandoverFailureParser(ParserBase):
             # from rrc connection reestablishment (cause = handover failure),
             # so it should be the same cell as indicated in the handover command.
             if not self.switched_to_target_cell:
-                self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
+                self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
                 self.eprint('recovered from handover failure, but the current serving cell'
                             + ' is not the one indicated in the handover command.')
             print('Handover Failure $ From: %s, To: %s' % (self.handover_command_timestamp, timestamp))
@@ -111,7 +109,7 @@ class HandoverFailureParser(ParserBase):
             self.shared_states['last_serving_cell_id'] = self.trying_cell_id
 
     def _act_on_rrc_connection_reestablishment_request(self, event):
-        _, _, fields = event
+        timestamp, _, fields = event
         # Expected case, UE is trying to reestablish rrc connection.
         if 'handoverFailure' in fields['reestablishmentCause']\
         and self.received_handover_command:
@@ -124,7 +122,8 @@ class HandoverFailureParser(ParserBase):
         # cause handoverFailure, but no handover command was ever received.
         elif 'handoverFailure' in fields['reestablishmentCause']\
         and not self.received_handover_command:
-            self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
             self.eprint('rrc connection reestablishment has cause handoverFailure,'
                         + ' but no handover command was received.')
 
@@ -133,7 +132,7 @@ class HandoverFailureParser(ParserBase):
         self.mac_rach_triggered_reason = fields['Reason']
 
     def _act_on_mac_rach_attempt(self, event):
-        _, _, fields = event
+        timestamp, _, fields = event
         # If the recent triggering reason of MAC RACH is RLF, and a previous
         # handover failed, and the new MAC RACH succeeded, mark it.
         if fields['Result'] == 'Success'\
@@ -144,7 +143,8 @@ class HandoverFailureParser(ParserBase):
         # any handover command, output a warning.
         elif self.mac_rach_triggered_reason == 'HO'\
         and not self.received_handover_command:
-            self.eprint('Warning [%s]: ' % self.__class__.__name__, end='')
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
             self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_pdcp_packet(self, event):

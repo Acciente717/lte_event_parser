@@ -36,6 +36,7 @@ class ParserBase(ABC):
 
     @staticmethod
     def eprint(*pargs, **kargs):
+        """ Print error messgae to stderr. """
         print('\u001b[31m', end='', file=sys.stderr)
         print(*pargs, file=sys.stderr, **kargs)
         print('\u001b[0m', end='', file=sys.stderr)
