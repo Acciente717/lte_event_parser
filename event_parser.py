@@ -19,7 +19,8 @@ def run():
         'last_serving_cell_dl_freq' : None,
         'last_serving_cell_ul_freq' : None,
         'last_serving_cell_id' : None,
-        'reset_all' : False
+        'reset_all' : False,
+        'stall_once' : False
     }
     active_parsers = [
         i(shared_states) for i in globals().values()
@@ -29,7 +30,11 @@ def run():
     ]
     while True:
         try:
-            line = input()
+            if not shared_states['stall_once']:
+                line = input()
+            else:
+                shared_states['stall_once'] = False
+
             if shared_states['reset_all']:
                 for active_parser in active_parsers:
                     active_parser.reset()
