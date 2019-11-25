@@ -8,7 +8,7 @@ class FastRecoverAfterRLFParser(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
-    
+
     def reset_to_normal_state(self):
         self.switched_with_meas_report_sent = False
         self.reestablishment_requested_on_rlf = False
