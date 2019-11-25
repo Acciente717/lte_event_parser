@@ -8,6 +8,8 @@ class SlowRecoverAfterRLF(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        self.last_packet_timestamp_before_rlf = None
+        self.just_switched = False
 
     def reset_to_normal_state(self):
         self.reestablishment_requested_on_rlf = False
@@ -17,9 +19,7 @@ class SlowRecoverAfterRLF(ParserBase):
         self.rrc_reconfiguration_started = False
         self.reestablishment_request_timestamp = None
         self.rrc_reestablishment_rejected = False
-        self.mac_rach_switched_to_connection_request = False
-        self.last_packet_timestamp_before_rlf = None
-        self.just_switched = False
+        self.mac_rach_connection_request_reason = None
 
     def act_on_rrc_connection_reestablishment_request(self, event):
         timestamp, _, fields = event
@@ -35,12 +35,16 @@ class SlowRecoverAfterRLF(ParserBase):
             self.mac_rach_triggered_by_rlf = True
         elif fields['Reason'] == 'CONNECTION_REQ'\
         and self.mac_rach_triggered_by_rlf:
-            self.mac_rach_switched_to_connection_request = True
+            self.mac_rach_connection_request_reason = 'radio link failure'
+        elif fields['Reason'] == 'CONNECTION_REQ'\
+        and not self.mac_rach_triggered_by_rlf:
+            self.mac_rach_connection_request_reason = 'connection setup'
 
     def act_on_mac_rach_attempt(self, event):
         _, _, fields = event
         if fields['Result'] == 'Success'\
-        and self.mac_rach_switched_to_connection_request:
+        and (self.mac_rach_connection_request_reason == 'radio link failure'\
+             or self.mac_rach_connection_request_reason == 'connection setup'):
             self.mac_rach_attempt_succeeded = True
 
     def act_on_rrc_serv_cell_info(self, event):
@@ -62,26 +66,22 @@ class SlowRecoverAfterRLF(ParserBase):
     def act_on_rrc_connection_reconfiguration_complete(self, event):
         timestamp, _, _ = event
         if self.rrc_reconfiguration_started:
-            print('Slow Recover After RLF $ From: %s, To: %s' % (self.reestablishment_request_timestamp, timestamp))
+            if self.mac_rach_connection_request_reason == 'radio link failure':
+                print('Slow Recover After RLF $ From: %s, To: %s' % (self.reestablishment_request_timestamp, timestamp))
+            elif self.mac_rach_connection_request_reason == 'connection setup':
+                print('Connection Setup')
             self.just_switched = True
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
             self.shared_states['last_serving_cell_id'] = self.trying_cell_id
-        self.switched_with_meas_report_sent = False
-        self.reestablishment_requested_on_rlf = False
-        self.mac_rach_triggered_by_rlf = False
-        self.mac_rach_attempt_succeeded = False
-        self.connection_setup = False
-        self.rrc_reconfiguration_started = False
-        self.reestablishment_request_timestamp = None
-        self.rrc_reestablishment_rejected = False
-        self.mac_rach_switched_to_connection_request = False
+            self.shared_states['reset_all'] = True
 
     def act_on_pdcp_packet(self, event):
         timestamp, _, _ = event
         if self.just_switched:
             print('Slow Recover After RLF PDCP Disruption $ From: %s, To: %s' % (self.last_packet_timestamp_before_rlf, timestamp))
             self.shared_states['reset_all'] = True
+            self.just_switched = False
 
     action_to_events = {
         'rrcConnectionReestablishmentRequest' : act_on_rrc_connection_reestablishment_request,

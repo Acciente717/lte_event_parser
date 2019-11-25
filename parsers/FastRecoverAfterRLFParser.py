@@ -8,6 +8,8 @@ class FastRecoverAfterRLFParser(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        self.just_switched = False
+        self.last_packet_timestamp_before_rlf = None
 
     def reset_to_normal_state(self):
         self.switched_with_meas_report_sent = False
@@ -19,8 +21,6 @@ class FastRecoverAfterRLFParser(ParserBase):
         self.reestablishment_request_timestamp = None
         self.rrc_reestablishment_rejected = False
         self.mac_rach_switched_to_connection_request = False
-        self.last_packet_timestamp_before_rlf = None
-        self.just_switched = False
 
     def act_on_meas_results(self, event):
         self.have_sent_meas_report_to_current_cell = True
@@ -75,16 +75,7 @@ class FastRecoverAfterRLFParser(ParserBase):
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
             self.shared_states['last_serving_cell_id'] = self.trying_cell_id
-        self.have_sent_meas_report_to_current_cell = False
-        self.switched_with_meas_report_sent = False
-        self.reestablishment_requested_on_rlf = False
-        self.mac_rach_triggered_by_rlf = False
-        self.mac_rach_attempt_succeeded = False
-        self.reestablishment_completed = False
-        self.rrc_reconfiguration_started = False
-        self.reestablishment_request_timestamp = None
-        self.rrc_reestablishment_rejected = False
-        self.mac_rach_switched_to_connection_request = False
+            self.shared_states['reset_all'] = True
     
     def act_on_rrc_reestablishment_rejected(self, event):
         self.rrc_reestablishment_rejected = True
@@ -93,6 +84,7 @@ class FastRecoverAfterRLFParser(ParserBase):
         timestamp, _, _ = event
         if self.just_switched:
             print('Fast Recovery After RLF PDCP Disruption $ From: %s, To: %s' % (self.last_packet_timestamp_before_rlf, timestamp))
+            self.just_switched = False
             self.shared_states['reset_all'] = True
 
     action_to_events = {
