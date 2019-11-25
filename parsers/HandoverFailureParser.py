@@ -42,10 +42,11 @@ class HandoverFailureParser(ParserBase):
         self.target_cell_id = None
         self.received_handover_command = False
         self.mac_rach_triggered_reason = None
+        self.mac_rach_started = False
         self.handover_failure = False
         self.mac_rach_succeeded_after_ho_failure = False
         self.connection_reconfig_after_ho_failure = False
-        self.switched_to_target_cell = False
+        self.new_cell_type = None
         self.last_packet_timestamp_before_ho = None
         self.just_handovered = False
 
@@ -77,7 +78,7 @@ class HandoverFailureParser(ParserBase):
                             % (self.__class__.__name__, timestamp), end='')
                 self.eprint('received handover command twice before'
                             + ' taking any actions.')
-        
+
         # Unexpected case, we received handover command but we have not sent
         # any measurement report.
         if fields['mobilityControlInfo'] == '1'\
@@ -96,9 +97,9 @@ class HandoverFailureParser(ParserBase):
 
         # Check if we moved to the target cell.
         if fields['Cell ID'] == self.target_cell_id:
-            self.switched_to_target_cell = True
+            self.new_cell_type = 'target cell'
         else:
-            self.switched_to_target_cell = False
+            self.new_cell_type = 'previous serving cell'
         self.trying_cell_dl_freq = fields['Downlink frequency']
         self.trying_cell_ul_freq = fields['Uplink frequency']
         self.trying_cell_id = fields['Cell ID']
@@ -106,16 +107,25 @@ class HandoverFailureParser(ParserBase):
     def _act_on_rrc_connection_reconfiguration_complete(self, event):
         timestamp, _, _ = event
         if self.connection_reconfig_after_ho_failure:
+
+            if self.new_cell_type == 'target cell':
+                print('Handover Failure $ New cell: target cell, From: %s, To: %s'
+                      % (self.handover_command_timestamp, timestamp))
+            elif self.new_cell_type == 'previous serving cell':
+                print('Handover Failure $ New cell: previous serving cell, From: %s, To: %s'
+                      % (self.handover_command_timestamp, timestamp))
             # Unexpected case, the current serving cell ID does not match that
             # indicated in the previous handover command. Note that we recovered
             # from rrc connection reestablishment (cause = handover failure),
             # so it should be the same cell as indicated in the handover command.
-            if not self.switched_to_target_cell:
+            else:
                 self.eprint('Warning [%s] [%s]: '
                         % (self.__class__.__name__, timestamp), end='')
                 self.eprint('recovered from handover failure, but the current serving cell'
-                            + ' is not the one indicated in the handover command.')
-            print('Handover Failure $ From: %s, To: %s' % (self.handover_command_timestamp, timestamp))
+                            + ' is not the one indicated in the handover command nor the'
+                            + ' previous serving cell.')
+                print('Handover Failure $ New cell: unknown type, From: %s, To: %s'
+                      % (self.handover_command_timestamp, timestamp))
 
             # Partially reset the states. Let `_act_on_pdcp_packet` to do the full reset
             # when it sees the first PDCP data packet afterwards.
@@ -138,10 +148,18 @@ class HandoverFailureParser(ParserBase):
         if 'handoverFailure' in fields['reestablishmentCause']\
         and self.received_handover_command:
             self.handover_failure = True
-        # Expected case, the reestablishmentCause is not handoverFailure.
+        # Expected case, the reestablishmentCause is not handoverFailure, reset
+        # some of the status back to False.
         elif 'handoverFailure' not in fields['reestablishmentCause']:
             self.handover_failure = False
             self.mac_rach_succeeded_after_ho_failure = False
+        # Expected case, the rrc reconfiguration request timed out, and it
+        # triggered rrc connection ereestablishment request without any prior
+        # MAC RACH.
+        elif 'handoverFailure' in fields['reestablishmentCause']\
+        and self.received_handover_command\
+        and not self.mac_rach_started:
+            self.handover_failure = True
         # Unexpected case, UE sends rrc connection reestablishment request with
         # cause handoverFailure, but no handover command was ever received.
         elif 'handoverFailure' in fields['reestablishmentCause']\
@@ -154,6 +172,7 @@ class HandoverFailureParser(ParserBase):
     def _act_on_mac_rach_trigger(self, event):
         _, _, fields = event
         self.mac_rach_triggered_reason = fields['Reason']
+        self.mac_rach_started = True
 
     def _act_on_mac_rach_attempt(self, event):
         timestamp, _, fields = event
