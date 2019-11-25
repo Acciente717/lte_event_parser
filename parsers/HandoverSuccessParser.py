@@ -43,6 +43,7 @@ class HandoverSuccessParser(ParserBase):
         self.received_handover_command = False
         self.mac_rach_triggered_reason = None
         self.mac_rach_just_succeeded = False
+        self.mac_rach_success_timestamp = None
 
     def _act_on_rrc_connection_reconfiguration(self, event):
         timestamp, _, fields = event
@@ -74,7 +75,23 @@ class HandoverSuccessParser(ParserBase):
 
     def _act_on_mac_rach_trigger(self, event):
         _, _, fields = event
-        self.mac_rach_triggered_reason = fields['Reason']
+        
+        # Expected case, MAC RACH is triggered by handover.
+        if fields['Reason'] == 'HO':
+            self.mac_rach_triggered_reason = 'HO'
+        # Expected case, MAC RACH was once triggered by handover and
+        # succeeded, but before we received any cell information packet,
+        # another new MAC RACH was triggered. We must report the handover
+        # now, and leave the intra/inter field as unknown. Only reset
+        # this parser, because other parsers might be in the middle of
+        # detecting an event.
+        elif fields['Reason'] != 'HO'\
+        and fields['Reason'] != 'UL_DATA'\
+        and fields['Reason'] != 'DL_DATA'\
+        and self.mac_rach_just_succeeded:
+            print('Handover Success $ From: %s, To: %s, Frequecy Change: unknown'
+                  % (self.handover_command_timestamp, self.mac_rach_success_timestamp))
+            self._reset_to_normal_state()
 
     def _act_on_mac_rach_attempt(self, event):
         timestamp, _, fields = event
@@ -85,6 +102,7 @@ class HandoverSuccessParser(ParserBase):
         and self.received_handover_command\
         and self.mac_rach_triggered_reason == 'HO':
             self.mac_rach_just_succeeded = True
+            self.mac_rach_success_timestamp = timestamp
         # Sanity check. If the triggered reason is "HO" but we didn't receive
         # any handover command, output a warning.
         elif self.mac_rach_triggered_reason == 'HO'\
@@ -105,7 +123,8 @@ class HandoverSuccessParser(ParserBase):
         # we print the handover summary.
         if fields['Cell ID'] == self.target_cell_id\
         and self.mac_rach_just_succeeded:
-            print('Handover Success $ From: %s, To: %s' % (self.handover_command_timestamp, timestamp), end='')
+            print('Handover Success $ From: %s, To: %s'
+                  % (self.handover_command_timestamp, self.mac_rach_success_timestamp), end='')
 
             # Decide whether the handover is inter- or intra-frequency.
             if self.shared_states['last_serving_cell_dl_freq'] is None\
@@ -154,7 +173,7 @@ class HandoverSuccessParser(ParserBase):
         # disruption summary and then reset the states.
         if self.just_handovered:
             print('Handover Success PDCP Disruption $ From: %s, To: %s'
-                  % (self.last_packet_timestamp_before_ho, timestamp))
+                  % (self.last_packet_timestamp_before_ho, self.mac_rach_success_timestamp))
             self.shared_states['reset_all'] = True
             self.just_handovered = False
         # If this is the first PDCP data packet we see after handover,
@@ -174,13 +193,17 @@ class HandoverSuccessParser(ParserBase):
     def _act_on_meas_results(self, event):
         self.have_sent_meas_report_to_current_cell = True
 
+    def _act_on_rrc_connection_release(self, event):
+        self.shared_states['reset_all'] = True
+
     _action_to_events = {
         'measResults' : _act_on_meas_results,
         'rrcConnectionReconfiguration' : _act_on_rrc_connection_reconfiguration,
         'LTE_MAC_Rach_Trigger' : _act_on_mac_rach_trigger,
         'LTE_MAC_Rach_Attempt' : _act_on_mac_rach_attempt,
         'FirstPDCPPacketAfterDisruption' : _act_on_pdcp_packet,
-        'LTE_RRC_Serv_Cell_Info' : _act_on_rrc_serv_cell_info
+        'LTE_RRC_Serv_Cell_Info' : _act_on_rrc_serv_cell_info,
+        'rrcConnectionRelease' : _act_on_rrc_connection_release
     }
 
     def run(self, event):
