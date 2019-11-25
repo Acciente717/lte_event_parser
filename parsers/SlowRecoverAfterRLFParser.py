@@ -69,7 +69,7 @@ class SlowRecoverAfterRLF(ParserBase):
             if self.mac_rach_connection_request_reason == 'radio link failure':
                 print('Slow Recover After RLF $ From: %s, To: %s' % (self.reestablishment_request_timestamp, timestamp))
             elif self.mac_rach_connection_request_reason == 'connection setup':
-                print('Connection Setup')
+                print('Connection Setup $')
             self.just_switched = True
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
@@ -83,6 +83,9 @@ class SlowRecoverAfterRLF(ParserBase):
             self.shared_states['reset_all'] = True
             self.just_switched = False
 
+    def _act_on_rrc_connection_release(self, event):
+        self.shared_states['reset_all'] = True
+
     action_to_events = {
         'rrcConnectionReestablishmentRequest' : act_on_rrc_connection_reestablishment_request,
         'LTE_MAC_Rach_Trigger' : act_on_mac_rach_trigger,
@@ -91,7 +94,8 @@ class SlowRecoverAfterRLF(ParserBase):
         'rrcConnectionReconfiguration' : act_on_rrc_connection_reconfiguration,
         'rrcConnectionReconfigurationComplete' : act_on_rrc_connection_reconfiguration_complete,
         'FirstPDCPPacketAfterDisruption' : act_on_pdcp_packet,
-        'LTE_RRC_Serv_Cell_Info' : act_on_rrc_serv_cell_info
+        'LTE_RRC_Serv_Cell_Info' : act_on_rrc_serv_cell_info,
+        'rrcConnectionRelease' : _act_on_rrc_connection_release
     }
 
     def run(self, event):
