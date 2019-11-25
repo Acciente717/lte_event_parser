@@ -87,6 +87,9 @@ class FastRecoverAfterRLFParser(ParserBase):
             self.just_switched = False
             self.shared_states['reset_all'] = True
 
+    def _act_on_rrc_connection_release(self, event):
+        self.shared_states['reset_all'] = True
+
     action_to_events = {
         'measResults' : act_on_meas_results,
         'rrcConnectionReestablishmentRequest' : act_on_rrc_connection_reestablishment_request,
@@ -97,7 +100,8 @@ class FastRecoverAfterRLFParser(ParserBase):
         'rrcConnectionReconfigurationComplete' : act_on_rrc_connection_reconfiguration_complete,
         'FirstPDCPPacketAfterDisruption' : act_on_pdcp_packet,
         'rrcConnectionReestablishmentReject' : act_on_rrc_reestablishment_rejected,
-        'LTE_RRC_Serv_Cell_Info' : act_on_rrc_serv_cell_info
+        'LTE_RRC_Serv_Cell_Info' : act_on_rrc_serv_cell_info,
+        'rrcConnectionRelease' : _act_on_rrc_connection_release
     }
 
     def run(self, event):

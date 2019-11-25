@@ -193,6 +193,9 @@ class HandoverFailureParser(ParserBase):
     def _act_on_meas_results(self, event):
         self.have_sent_meas_report_to_current_cell = True
 
+    def _act_on_rrc_connection_release(self, event):
+        self.shared_states['reset_all'] = True
+
     _action_to_events = {
         'measResults' : _act_on_meas_results,
         'rrcConnectionReconfiguration' : _act_on_rrc_connection_reconfiguration,
@@ -201,7 +204,8 @@ class HandoverFailureParser(ParserBase):
         'LTE_MAC_Rach_Trigger' : _act_on_mac_rach_trigger,
         'LTE_MAC_Rach_Attempt' : _act_on_mac_rach_attempt,
         'FirstPDCPPacketAfterDisruption' : _act_on_pdcp_packet,
-        'LTE_RRC_Serv_Cell_Info' : _act_on_rrc_serv_cell_info
+        'LTE_RRC_Serv_Cell_Info' : _act_on_rrc_serv_cell_info,
+        'rrcConnectionRelease' : _act_on_rrc_connection_release
     }
 
     def run(self, event):
