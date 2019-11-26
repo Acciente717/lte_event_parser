@@ -1,4 +1,5 @@
 ### Copyright [2019] Zhiyao Ma
+import sys
 import inspect
 
 from parsers.ParserBase import ParserBase
@@ -28,10 +29,13 @@ def run():
         and issubclass(i, ParserBase)
         and i is not ParserBase
     ]
+
+    line_num = 0
     while True:
         try:
             if not shared_states['stall_once']:
                 line = input()
+                line_num += 1
             else:
                 shared_states['stall_once'] = False
 
@@ -43,6 +47,10 @@ def run():
                 active_parser.run(extract_info(line))
         except EOFError:
             break
+        except Exception as e:
+            print('Exception at line', line_num)
+            print(e)
+            sys.exit(1)
 
 if __name__ == '__main__':
     run()
