@@ -163,25 +163,25 @@ class HandoverFailureParser(ParserBase):
                         + ' but no handover command was received.')
 
     def _act_on_mac_rach_trigger(self, event):
-        _, _, fields = event
+        timestamp, _, fields = event
         self.mac_rach_triggered_reason = fields['Reason']
         self.mac_rach_started = True
+        # Unexpected case. If the triggered reason is "HO" but we didn't receive
+        # any handover command, output a warning.
+        if fields['Reason'] == 'HO'\
+        and not self.received_handover_command:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_mac_rach_attempt(self, event):
-        timestamp, _, fields = event
+        _, _, fields = event
         # If the recent triggering reason of MAC RACH is RLF, and a previous
         # handover failed, and the new MAC RACH succeeded, mark it.
         if fields['Result'] == 'Success'\
         and self.handover_failure\
         and self.mac_rach_triggered_reason == 'RLF':
             self.mac_rach_succeeded_after_ho_failure = True
-        # Sanity check. If the triggered reason is "HO" but we didn't receive
-        # any handover command, output a warning.
-        elif self.mac_rach_triggered_reason == 'HO'\
-        and not self.received_handover_command:
-            self.eprint('Warning [%s] [%s]: '
-                        % (self.__class__.__name__, timestamp), end='')
-            self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_pdcp_packet(self, event):
         timestamp, _, _ = event

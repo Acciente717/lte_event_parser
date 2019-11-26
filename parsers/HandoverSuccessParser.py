@@ -74,7 +74,7 @@ class HandoverSuccessParser(ParserBase):
                         + ' report was sent.')
 
     def _act_on_mac_rach_trigger(self, event):
-        _, _, fields = event
+        timestamp, _, fields = event
         
         # Expected case, MAC RACH is triggered by handover.
         if fields['Reason'] == 'HO':
@@ -92,6 +92,13 @@ class HandoverSuccessParser(ParserBase):
             print('Handover Success $ From: %s, To: %s, Frequecy Change: unknown'
                   % (self.handover_command_timestamp, self.mac_rach_success_timestamp))
             self._reset_to_normal_state()
+        # Unexpected case. If the triggered reason is "HO" but we didn't receive
+        # any handover command, output a warning.
+        elif fields['Reason'] == 'HO'\
+        and not self.received_handover_command:
+            self.eprint('Warning [%s] [%s]: '
+                        % (self.__class__.__name__, timestamp), end='')
+            self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_mac_rach_attempt(self, event):
         timestamp, _, fields = event
@@ -103,13 +110,6 @@ class HandoverSuccessParser(ParserBase):
         and self.mac_rach_triggered_reason == 'HO':
             self.mac_rach_just_succeeded = True
             self.mac_rach_success_timestamp = timestamp
-        # Sanity check. If the triggered reason is "HO" but we didn't receive
-        # any handover command, output a warning.
-        elif self.mac_rach_triggered_reason == 'HO'\
-        and not self.received_handover_command:
-            self.eprint('Warning [%s] [%s]: '
-                        % (self.__class__.__name__, timestamp), end='')
-            self.eprint('mac rach triggered by handover, but no handover command was received.')
 
     def _act_on_rrc_serv_cell_info(self, event):
         timestamp, _, fields = event
