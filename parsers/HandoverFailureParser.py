@@ -166,6 +166,7 @@ class HandoverFailureParser(ParserBase):
         timestamp, _, fields = event
         self.mac_rach_triggered_reason = fields['Reason']
         self.mac_rach_started = True
+        self.last_packet_timestamp_before_ho = fields['LastPDCPPacketTimestamp']
         # Unexpected case. If the triggered reason is "HO" but we didn't receive
         # any handover command, output a warning.
         if fields['Reason'] == 'HO'\

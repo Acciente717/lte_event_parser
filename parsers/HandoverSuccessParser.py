@@ -54,7 +54,6 @@ class HandoverSuccessParser(ParserBase):
         if fields['mobilityControlInfo'] == '1'\
         and not self.received_handover_command:
             self.received_handover_command = True
-            self.last_packet_timestamp_before_ho = fields['LastPDCPPacketTimestamp']
             self.handover_command_timestamp = timestamp
             self.target_cell_id = fields['targetPhysCellId']
         # Unexpected case, we received handover commands twice
@@ -79,6 +78,7 @@ class HandoverSuccessParser(ParserBase):
         # Expected case, MAC RACH is triggered by handover.
         if fields['Reason'] == 'HO':
             self.mac_rach_triggered_reason = 'HO'
+            self.last_packet_timestamp_before_ho = fields['LastPDCPPacketTimestamp']
         # Expected case, MAC RACH was once triggered by handover and
         # succeeded, but before we received any cell information packet,
         # another new MAC RACH was triggered. We must report the handover
@@ -92,9 +92,10 @@ class HandoverSuccessParser(ParserBase):
             print('Handover Success $ From: %s, To: %s, Frequecy Change: unknown'
                   % (self.handover_command_timestamp, self.mac_rach_success_timestamp))
             self._reset_to_normal_state()
+
         # Unexpected case. If the triggered reason is "HO" but we didn't receive
         # any handover command, output a warning.
-        elif fields['Reason'] == 'HO'\
+        if fields['Reason'] == 'HO'\
         and not self.received_handover_command:
             self.eprint('Warning [%s] [%s]: '
                         % (self.__class__.__name__, timestamp), end='')
@@ -156,6 +157,7 @@ class HandoverSuccessParser(ParserBase):
                       % (self.last_packet_timestamp_before_ho,
                          self.first_packet_timestamp_after_ho))
                 self.just_handovered = False
+                self.first_packet_timestamp_after_ho = None
 
         # Sanity check. If the cell ID indicated in the handover command
         # does not match the new serving cell ID, output a warning.
