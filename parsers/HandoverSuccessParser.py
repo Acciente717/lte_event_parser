@@ -175,7 +175,7 @@ class HandoverSuccessParser(ParserBase):
         # disruption summary and then reset the states.
         if self.just_handovered:
             print('Handover Success PDCP Disruption $ From: %s, To: %s'
-                  % (self.last_packet_timestamp_before_ho, self.mac_rach_success_timestamp))
+                  % (self.last_packet_timestamp_before_ho, timestamp))
             self.shared_states['reset_all'] = True
             self.just_handovered = False
         # If this is the first PDCP data packet we see after handover,
