@@ -98,8 +98,10 @@ class HandoverFailureParser(ParserBase):
         # Check if we moved to the target cell.
         if fields['Cell ID'] == self.target_cell_id:
             self.new_cell_type = 'target cell'
-        else:
+        elif fields['Cell ID'] == self.shared_states['last_serving_cell_id']:
             self.new_cell_type = 'previous serving cell'
+        else:
+            self.new_cell_type = 'unknown'
         self.trying_cell_dl_freq = fields['Downlink frequency']
         self.trying_cell_ul_freq = fields['Uplink frequency']
         self.trying_cell_id = fields['Cell ID']
