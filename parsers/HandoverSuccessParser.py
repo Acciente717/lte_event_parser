@@ -31,7 +31,6 @@ class HandoverSuccessParser(ParserBase):
         self._reset_to_normal_state()
 
         self.last_packet_timestamp_before_ho = None
-        self.first_packet_timestamp_after_ho = None
         self.just_handovered = False
 
         # To avoid false positive warning upon program start, set it to True.
@@ -44,6 +43,7 @@ class HandoverSuccessParser(ParserBase):
         self.mac_rach_triggered_reason = None
         self.mac_rach_just_succeeded = False
         self.mac_rach_success_timestamp = None
+        self.first_packet_timestamp_after_ho = None
 
     def _act_on_rrc_connection_reconfiguration(self, event):
         timestamp, _, fields = event
