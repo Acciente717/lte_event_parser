@@ -8,6 +8,7 @@ class SlowRecoverAfterRLF(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        self.trying_cell_identity = None
         self.last_packet_timestamp_before_rlf = None
         self.just_switched = False
 
@@ -52,6 +53,7 @@ class SlowRecoverAfterRLF(ParserBase):
         self.trying_cell_dl_freq = fields['Downlink frequency']
         self.trying_cell_ul_freq = fields['Uplink frequency']
         self.trying_cell_id = fields['Cell ID']
+        self.trying_cell_identity = fields['Cell Identity']
 
     def act_on_rrc_connection_setup(self, event):
         if self.mac_rach_attempt_succeeded:
@@ -69,14 +71,19 @@ class SlowRecoverAfterRLF(ParserBase):
             if self.mac_rach_connection_request_reason == 'radio link failure':
                 if self.trying_cell_id == self.shared_states['last_serving_cell_id']:
                     print('Slow Recover After RLF (to prev serving cell) $ From: %s, To: %s'
-                           % (self.reestablishment_request_timestamp, timestamp))
+                          ', Previous Cell Identity: %s'
+                           % (self.reestablishment_request_timestamp, timestamp,
+                              self.shared_states['last_serving_cell_identity']))
                 else:
                     print('Slow Recover After RLF (to new cell) $ From: %s, To: %s'
-                           % (self.reestablishment_request_timestamp, timestamp))
+                          ', Previous Cell Identity: %s'
+                           % (self.reestablishment_request_timestamp, timestamp,
+                              self.shared_states['last_serving_cell_identity']))
                 self.just_switched = True
                 self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
                 self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
                 self.shared_states['last_serving_cell_id'] = self.trying_cell_id
+                self.shared_states['last_serving_cell_identity'] = self.trying_cell_identity
             elif self.mac_rach_connection_request_reason == 'connection setup':
                 print('Connection Setup $')
             self.shared_states['reset_all'] = True

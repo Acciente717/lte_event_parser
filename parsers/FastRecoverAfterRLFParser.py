@@ -8,6 +8,7 @@ class FastRecoverAfterRLFParser(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        self.trying_cell_identity = None
         self.just_switched = False
         self.last_packet_timestamp_before_rlf = None
 
@@ -51,6 +52,7 @@ class FastRecoverAfterRLFParser(ParserBase):
         self.trying_cell_dl_freq = fields['Downlink frequency']
         self.trying_cell_ul_freq = fields['Uplink frequency']
         self.trying_cell_id = fields['Cell ID']
+        self.trying_cell_identity = fields['Cell Identity']
 
     def act_on_rrc_connection_reestablishment_complete(self, event):
         if self.mac_rach_attempt_succeeded:
@@ -68,13 +70,20 @@ class FastRecoverAfterRLFParser(ParserBase):
         and not self.rrc_reestablishment_rejected\
         and not self.mac_rach_switched_to_connection_request:
             if self.shared_states['last_serving_cell_id'] == self.trying_cell_id:
-                print('Fast Recovery After RLF (Self Reconnection) $ From: %s, To: %s' % (self.reestablishment_request_timestamp, timestamp))
+                print('Fast Recovery After RLF (Self Reconnection) $ From: %s, To: %s'
+                      ', Previous Cell Identity: %s'
+                      % (self.reestablishment_request_timestamp, timestamp,
+                         self.shared_states['last_serving_cell_identity']))
             else:
-                print('Fast Recovery After RLF (Psudo Handover) $ From: %s, To: %s' % (self.reestablishment_request_timestamp, timestamp))
+                print('Fast Recovery After RLF (Psudo Handover) $ From: %s, To: %s'
+                      ', Previous Cell Identity: %s'
+                      % (self.reestablishment_request_timestamp, timestamp,
+                         self.shared_states['last_serving_cell_identity']))
             self.just_switched = True
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
             self.shared_states['last_serving_cell_id'] = self.trying_cell_id
+            self.shared_states['last_serving_cell_identity'] = self.trying_cell_identity
             self.shared_states['reset_all'] = True
     
     def act_on_rrc_reestablishment_rejected(self, event):

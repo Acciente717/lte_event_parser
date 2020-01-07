@@ -130,12 +130,15 @@ class HandoverSuccessParser(ParserBase):
             # Decide whether the handover is inter- or intra-frequency.
             if self.shared_states['last_serving_cell_dl_freq'] is None\
             or self.shared_states['last_serving_cell_ul_freq'] is None:
-                print(', Frequecy Change: unknown')
+                print(', Frequecy Change: unknown, Previous Cell Identity:',
+                      self.shared_states['last_serving_cell_identity'])
             elif self.shared_states['last_serving_cell_dl_freq'] == fields['Downlink frequency']\
             and self.shared_states['last_serving_cell_ul_freq'] == fields['Uplink frequency']:
-                print(', Frequecy Change: intra')
+                print(', Frequecy Change: intra, Previous Cell Identity:',
+                      self.shared_states['last_serving_cell_identity'])
             else:
-                print(', Frequecy Change: inter')
+                print(', Frequecy Change: inter, Previous Cell Identity:',
+                      self.shared_states['last_serving_cell_identity'])
 
             # Reset the states.
             self.shared_states['reset_all'] = True
@@ -146,6 +149,7 @@ class HandoverSuccessParser(ParserBase):
             self.shared_states['last_serving_cell_dl_freq'] = fields['Downlink frequency']
             self.shared_states['last_serving_cell_ul_freq'] = fields['Uplink frequency']
             self.shared_states['last_serving_cell_id'] = fields['Cell ID']
+            self.shared_states['last_serving_cell_identity'] = fields['Cell Identity']
 
             # If we have already received PDCP data packets after handover,
             # output the PDCP disruption summary and then reset all states.

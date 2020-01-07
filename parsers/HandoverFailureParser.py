@@ -33,6 +33,7 @@ class HandoverFailureParser(ParserBase):
         self.trying_cell_dl_freq = None
         self.trying_cell_ul_freq = None
         self.trying_cell_id = None
+        self.trying_cell_identity = None
         self.last_packet_timestamp_before_ho = None
         self.just_handovered = False
 
@@ -105,6 +106,7 @@ class HandoverFailureParser(ParserBase):
         self.trying_cell_dl_freq = fields['Downlink frequency']
         self.trying_cell_ul_freq = fields['Uplink frequency']
         self.trying_cell_id = fields['Cell ID']
+        self.trying_cell_identity = fields['Cell Identity']
 
     def _act_on_rrc_connection_reconfiguration_complete(self, event):
         timestamp, _, _ = event
@@ -112,10 +114,14 @@ class HandoverFailureParser(ParserBase):
 
             if self.new_cell_type == 'target cell':
                 print('Handover Failure (Recovered to target cell) $ From: %s, To: %s'
-                      % (self.handover_command_timestamp, timestamp))
+                      ', Previous Cell Identity: %s'
+                      % (self.handover_command_timestamp, timestamp,
+                         self.shared_states['last_serving_cell_identity']))
             elif self.new_cell_type == 'previous serving cell':
                 print('Handover Failure (Recovered to prev serving cell) $ From: %s, To: %s'
-                      % (self.handover_command_timestamp, timestamp))
+                      ', Previous Cell Identity: %s'
+                      % (self.handover_command_timestamp, timestamp,
+                         self.shared_states['last_serving_cell_identity']))
             # Unexpected case, the current serving cell ID does not match that
             # indicated in the previous handover command. Note that we recovered
             # from rrc connection reestablishment (cause = handover failure),
@@ -127,7 +133,9 @@ class HandoverFailureParser(ParserBase):
                             + ' is not the one indicated in the handover command nor the'
                             + ' previous serving cell.')
                 print('Handover Failure (Recovered to unknown cell) $ From: %s, To: %s'
-                      % (self.handover_command_timestamp, timestamp))
+                      ', Previous Cell Identity: %s'
+                      % (self.handover_command_timestamp, timestamp,
+                         self.shared_states['last_serving_cell_identity']))
 
             # Partially reset the states. Let `_act_on_pdcp_packet` to do the full reset
             # when it sees the first PDCP data packet afterwards.
@@ -135,6 +143,7 @@ class HandoverFailureParser(ParserBase):
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq
             self.shared_states['last_serving_cell_id'] = self.trying_cell_id
+            self.shared_states['last_serving_cell_identity'] = self.trying_cell_identity
             self.shared_states['reset_all'] = True
 
     def _act_on_rrc_connection_reestablishment_request(self, event):
