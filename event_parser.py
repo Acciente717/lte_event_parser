@@ -20,7 +20,7 @@ def run():
         'last_serving_cell_dl_freq' : None,
         'last_serving_cell_ul_freq' : None,
         'last_serving_cell_id' : None,
-        'last_serving_cell_identity' : None,
+        'last_serving_cell_identity' : 'Unknown',
         'reset_all' : False,
         'stall_once' : False
     }

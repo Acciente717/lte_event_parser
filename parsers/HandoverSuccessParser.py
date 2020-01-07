@@ -90,7 +90,9 @@ class HandoverSuccessParser(ParserBase):
         and fields['Reason'] != 'DL_DATA'\
         and self.mac_rach_just_succeeded:
             print('Handover Success $ From: %s, To: %s, Frequecy Change: unknown'
-                  % (self.handover_command_timestamp, self.mac_rach_success_timestamp))
+                  ', Previous Cell Identity: %s'
+                  % (self.handover_command_timestamp, self.mac_rach_success_timestamp,
+                     self.shared_states['last_serving_cell_identity']))
             self._reset_to_normal_state()
 
         # Unexpected case. If the triggered reason is "HO" but we didn't receive
