@@ -145,8 +145,8 @@ class HandoverSuccessParser(ParserBase):
             else:
                 print(', Frequecy Change: inter, Previous Cell Identity: %s'
                       ', Current Cell Identity: %s'
-                      % (self.shared_states['last_serving_cell_identity']),
-                         fields['Cell Identity'])
+                      % (self.shared_states['last_serving_cell_identity'],
+                         fields['Cell Identity']))
 
             # Reset the states.
             self.shared_states['reset_all'] = True
