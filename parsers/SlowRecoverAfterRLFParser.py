@@ -71,14 +71,16 @@ class SlowRecoverAfterRLF(ParserBase):
             if self.mac_rach_connection_request_reason == 'radio link failure':
                 if self.trying_cell_id == self.shared_states['last_serving_cell_id']:
                     print('Slow Recover After RLF (to prev serving cell) $ From: %s, To: %s'
-                          ', Previous Cell Identity: %s'
+                          ', Previous Cell Identity: %s, Current Cell Identity: %s'
                            % (self.reestablishment_request_timestamp, timestamp,
-                              self.shared_states['last_serving_cell_identity']))
+                              self.shared_states['last_serving_cell_identity'],
+                              self.trying_cell_identity))
                 else:
                     print('Slow Recover After RLF (to new cell) $ From: %s, To: %s'
-                          ', Previous Cell Identity: %s'
+                          ', Previous Cell Identity: %s, Current Cell Identity: %s'
                            % (self.reestablishment_request_timestamp, timestamp,
-                              self.shared_states['last_serving_cell_identity']))
+                              self.shared_states['last_serving_cell_identity'],
+                              self.trying_cell_identity))
                 self.just_switched = True
                 self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
                 self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq

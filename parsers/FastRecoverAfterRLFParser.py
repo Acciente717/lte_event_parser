@@ -71,14 +71,16 @@ class FastRecoverAfterRLFParser(ParserBase):
         and not self.mac_rach_switched_to_connection_request:
             if self.shared_states['last_serving_cell_id'] == self.trying_cell_id:
                 print('Fast Recovery After RLF (Self Reconnection) $ From: %s, To: %s'
-                      ', Previous Cell Identity: %s'
+                      ', Previous Cell Identity: %s, Current Cell Identity: %s'
                       % (self.reestablishment_request_timestamp, timestamp,
-                         self.shared_states['last_serving_cell_identity']))
+                         self.shared_states['last_serving_cell_identity'],
+                         self.trying_cell_identity))
             else:
                 print('Fast Recovery After RLF (Psudo Handover) $ From: %s, To: %s'
-                      ', Previous Cell Identity: %s'
+                      ', Previous Cell Identity: %s, Current Cell Identity: %s'
                       % (self.reestablishment_request_timestamp, timestamp,
-                         self.shared_states['last_serving_cell_identity']))
+                         self.shared_states['last_serving_cell_identity'],
+                         self.trying_cell_identity))
             self.just_switched = True
             self.shared_states['last_serving_cell_dl_freq'] = self.trying_cell_dl_freq
             self.shared_states['last_serving_cell_ul_freq'] = self.trying_cell_ul_freq

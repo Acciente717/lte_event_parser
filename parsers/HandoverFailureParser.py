@@ -114,14 +114,16 @@ class HandoverFailureParser(ParserBase):
 
             if self.new_cell_type == 'target cell':
                 print('Handover Failure (Recovered to target cell) $ From: %s, To: %s'
-                      ', Previous Cell Identity: %s'
+                      ', Previous Cell Identity: %s, Current Cell Identity: %s'
                       % (self.handover_command_timestamp, timestamp,
-                         self.shared_states['last_serving_cell_identity']))
+                         self.shared_states['last_serving_cell_identity'],
+                         self.trying_cell_identity))
             elif self.new_cell_type == 'previous serving cell':
                 print('Handover Failure (Recovered to prev serving cell) $ From: %s, To: %s'
-                      ', Previous Cell Identity: %s'
+                      ', Previous Cell Identity: %s, Current Cell Identity: %s'
                       % (self.handover_command_timestamp, timestamp,
-                         self.shared_states['last_serving_cell_identity']))
+                         self.shared_states['last_serving_cell_identity'],
+                         self.trying_cell_identity))
             # Unexpected case, the current serving cell ID does not match that
             # indicated in the previous handover command. Note that we recovered
             # from rrc connection reestablishment (cause = handover failure),
@@ -133,9 +135,10 @@ class HandoverFailureParser(ParserBase):
                             + ' is not the one indicated in the handover command nor the'
                             + ' previous serving cell.')
                 print('Handover Failure (Recovered to unknown cell) $ From: %s, To: %s'
-                      ', Previous Cell Identity: %s'
+                      ', Previous Cell Identity: %s, Current Cell Identity: %s'
                       % (self.handover_command_timestamp, timestamp,
-                         self.shared_states['last_serving_cell_identity']))
+                         self.shared_states['last_serving_cell_identity'],
+                         self.trying_cell_identity))
 
             # Partially reset the states. Let `_act_on_pdcp_packet` to do the full reset
             # when it sees the first PDCP data packet afterwards.

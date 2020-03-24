@@ -132,15 +132,21 @@ class HandoverSuccessParser(ParserBase):
             # Decide whether the handover is inter- or intra-frequency.
             if self.shared_states['last_serving_cell_dl_freq'] is None\
             or self.shared_states['last_serving_cell_ul_freq'] is None:
-                print(', Frequecy Change: unknown, Previous Cell Identity:',
-                      self.shared_states['last_serving_cell_identity'])
+                print(', Frequecy Change: unknown, Previous Cell Identity: %s'
+                      ', Current Cell Identity: %s'
+                      % (self.shared_states['last_serving_cell_identity'],
+                         fields['Cell Identity']))
             elif self.shared_states['last_serving_cell_dl_freq'] == fields['Downlink frequency']\
             and self.shared_states['last_serving_cell_ul_freq'] == fields['Uplink frequency']:
-                print(', Frequecy Change: intra, Previous Cell Identity:',
-                      self.shared_states['last_serving_cell_identity'])
+                print(', Frequecy Change: intra, Previous Cell Identity: %s'
+                      ', Current Cell Identity: %s'
+                      % (self.shared_states['last_serving_cell_identity'],
+                         fields['Cell Identity']))
             else:
-                print(', Frequecy Change: inter, Previous Cell Identity:',
-                      self.shared_states['last_serving_cell_identity'])
+                print(', Frequecy Change: inter, Previous Cell Identity: %s'
+                      ', Current Cell Identity: %s'
+                      % (self.shared_states['last_serving_cell_identity']),
+                         fields['Cell Identity'])
 
             # Reset the states.
             self.shared_states['reset_all'] = True
