@@ -90,7 +90,7 @@ class HandoverSuccessParser(ParserBase):
         and fields['Reason'] != 'DL_DATA'\
         and self.mac_rach_just_succeeded:
             print('Handover Success $ From: %s, To: %s, Frequecy Change: unknown'
-                  ', Previous Cell Identity: %s'
+                  ', Previous Cell Identity: %s, Current Cell Identity: unknown'
                   % (self.handover_command_timestamp, self.mac_rach_success_timestamp,
                      self.shared_states['last_serving_cell_identity']))
             self._reset_to_normal_state()

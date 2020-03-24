@@ -20,7 +20,7 @@ def run():
         'last_serving_cell_dl_freq' : None,
         'last_serving_cell_ul_freq' : None,
         'last_serving_cell_id' : None,
-        'last_serving_cell_identity' : 'Unknown',
+        'last_serving_cell_identity' : 'unknown',
         'reset_all' : False,
         'stall_once' : False
     }
@@ -48,10 +48,10 @@ def run():
                 active_parser.run(extract_info(line))
         except EOFError:
             break
-        except Exception as e:
-            print('Exception at line', line_num)
-            print(e)
-            sys.exit(1)
+        # except Exception as e:
+            # print('Exception at line', line_num)
+            # print(e)
+            # sys.exit(1)
 
 if __name__ == '__main__':
     run()
